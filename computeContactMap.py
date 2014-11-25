@@ -80,5 +80,3 @@ if __name__ == '__main__':
             readName, chr1, start1, end1, strand1, score1, chr2, start2, end2, strand2, score2, flags = line.strip().split('\t')
             print flags
 
-
-Hola!!!

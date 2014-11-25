@@ -79,7 +79,3 @@ if __name__ == '__main__':
         for line in file_block(fp, number_of_chunks, chunk_number):
             readName, chr1, start1, end1, strand1, score1, chr2, start2, end2, strand2, score2, flags = line.strip().split('\t')
             print flags
-
-
-
-

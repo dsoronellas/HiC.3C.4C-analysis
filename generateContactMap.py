@@ -6,6 +6,7 @@ import pybedtools
 import argparse
 from operator import attrgetter
 
+## Class that sort command-line menu options
 class SortingHelpFormatter(argparse.HelpFormatter):
     def add_arguments(self, actions):
         actions = sorted(actions, key=attrgetter('option_strings'))

@@ -27,21 +27,33 @@ args = parser.parse_args()
 
 def generate_matrix_from_reference(chromosome,res):
     totalChromSize = pybedtools.chromsizes('hg19')[chromosome][1]
-
     names = []
     for bp in range(0,totalChromSize,res):
         if bp+res < totalChromSize:
             names.append(str(chromosome) + ":" + str(bp) + "-" + str(bp+res))
         elif bp+res >= totalChromSize:
             names.append(str(chromosome) + ":" + str(bp) + "-" + str(totalChromSize))
-
     ### Create an empty matrix that will be filled with counts
     dim = len(names)
     matrix = pandas.DataFrame(numpy.zeros((dim,dim)))
-
     matrix.columns = names
     matrix.index = names
     return(matrix)
+
+def get_col_name(row):
+    b = (matrix.ix[row.name] == row['value'])
+    return b.index[b.argmax()]
+
+def count_interactions_per_cell(row,line):
+    ## get row name from cell
+    bin1 = str(matrix.index[:1][0])
+    chr1 = bin1.split(':')[0]
+    start1 = bin1.split(':')[1].split('-')[0]
+    end1 = bin1.split(':')[1].split('-')[1]
+
+    matrix.ix[2].name
+
+
 
 def file_block(fp, number_of_blocks, block):
     '''

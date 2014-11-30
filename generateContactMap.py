@@ -4,17 +4,27 @@ import pandas
 import numpy
 import pybedtools
 import argparse
+import os
 from operator import attrgetter
 
-## Class that sort command-line menu options
+# # Class that sort command-line menu options
 class SortingHelpFormatter(argparse.HelpFormatter):
     def add_arguments(self, actions):
         actions = sorted(actions, key=attrgetter('option_strings'))
         super(SortingHelpFormatter, self).add_arguments(actions)
 
+
+def is_valid_file(parser, arg):
+    if not os.path.exists(arg):
+        parser.error("The file %s does not exist!" % arg)
+    else:
+        return open(arg, 'r')  # return an open file handle
+
+
 parser = argparse.ArgumentParser(description='Generate Interaction Maps of Given Size (bp)')
 parser.add_argument('-i', '--inputFile', dest='inputFile', metavar='FILE',
-                    help='Tab-delimited non-binary input file [Required]')
+                    help='Tab-delimited non-binary input file [Required]',
+                    type=lambda x: is_valid_file(parser, x))
 parser.add_argument('-c', '--chrom', dest='chrom', required=False,
                     default='chr6', help='Chromosome to calculate Maps [chr6]')
 parser.add_argument('-r', '--res', dest='res', required=False,
@@ -25,33 +35,38 @@ parser.add_argument('-v', '--version',
                     action='version', version='%(prog)s (myprog version 0.1)')
 args = parser.parse_args()
 
-def generate_matrix_from_reference(chromosome,res):
+
+def generate_matrix_from_reference(chromosome, res):
     totalChromSize = pybedtools.chromsizes('hg19')[chromosome][1]
     names = []
-    for bp in range(0,totalChromSize,res):
-        if bp+res < totalChromSize:
-            names.append(str(chromosome) + ":" + str(bp) + "-" + str(bp+res))
-        elif bp+res >= totalChromSize:
+    for bp in range(0, totalChromSize, res):
+        if bp + res < totalChromSize:
+            names.append(str(chromosome) + ":" + str(bp) + "-" + str(bp + res))
+        elif bp + res >= totalChromSize:
             names.append(str(chromosome) + ":" + str(bp) + "-" + str(totalChromSize))
     ### Create an empty matrix that will be filled with counts
     dim = len(names)
-    matrix = pandas.DataFrame(numpy.zeros((dim,dim)))
+    matrix = pandas.DataFrame(numpy.zeros((dim, dim)))
     matrix.columns = names
     matrix.index = names
-    return(matrix)
+    return (matrix, names)
 
-def get_col_name(row):
-    b = (matrix.ix[row.name] == row['value'])
-    return b.index[b.argmax()]
 
-def count_interactions_per_cell(row,line):
-    ## get row name from cell
-    bin1 = str(matrix.index[:1][0])
-    chr1 = bin1.split(':')[0]
-    start1 = bin1.split(':')[1].split('-')[0]
-    end1 = bin1.split(':')[1].split('-')[1]
+def compare_and_count(bin1, bin2, line):
+    s_bin1 = bin1.replace(':', ' ').replace('-', ' ').split()
+    s_bin2 = bin2.replace(':', ' ').replace('-', ' ').split()
+    id1, c1, s1, e1, sc1, st1, c2, s2, e2, sc2, st2 = line.strip().split('\t')
 
-    matrix.ix[2].name
+    interaction = 0
+    if bin1 == bin2:
+        # same chromosome and in-bin interaction
+        if (c1 == c2 == s_bin1[0]) and all([ s1 >= s_bin1[1], e2 <= s_bin2[2] ]):
+            interaction += 1
+    elif bin1 != bin2:
+        if all([ s_bin1[0] == s_bin2[0], (c1 == c2 == s_bin1[0]) ]):    # read is in target chromosome
+            if all([all([ s1 >= s_bin1[1], s1 <= s_bin1[2] ]), ([ s2 >= s_bin2[1], s2 <= s_bin2[2] ]) ]):
+                interaction += 1
+        else
 
 
 
@@ -65,7 +80,7 @@ def file_block(fp, number_of_blocks, block):
     assert 0 <= block and block < number_of_blocks
     assert 0 < number_of_blocks
 
-    fp.seek(0,2)
+    fp.seek(0, 2)
     file_size = fp.tell()
 
     ini = file_size * block / number_of_blocks
@@ -74,20 +89,22 @@ def file_block(fp, number_of_blocks, block):
     if ini <= 0:
         fp.seek(0)
     else:
-        fp.seek(ini-1)
+        fp.seek(ini - 1)
         fp.readline()
 
     while fp.tell() < end:
         yield fp.readline()
 
+
 if __name__ == '__main__':
-    matrix = generate_matrix_from_reference(str(args.chrom), int(args.res))
-    print matrix.iloc[3:3,:]
+    matrix, names = generate_matrix_from_reference(str(args.chrom), int(args.res))
 
     fp = open(args.inputFile)
     number_of_chunks = int(args.threads)
     for chunk_number in range(number_of_chunks):
-        print chunk_number, 100 * '='
         for line in file_block(fp, number_of_chunks, chunk_number):
-            readName, chr1, start1, end1, strand1, score1, chr2, start2, end2, strand2, score2, flags = line.strip().split('\t')
-            print flags
+            for bin1 in names:
+                for bin2 in names:
+                    matrix[bin1][bin2] = compare_and_count(bin1, bin2, line)
+
+

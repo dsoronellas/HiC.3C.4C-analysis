@@ -1,30 +1,31 @@
 #!/usr/local/bin/python
 
+import collections
+import re
 import pandas
-import numpy
 import pybedtools
 import argparse
 import os
 from operator import attrgetter
 
-# # Class that sort command-line menu options
+## Class that sort command-line menu options
 class SortingHelpFormatter(argparse.HelpFormatter):
     def add_arguments(self, actions):
         actions = sorted(actions, key=attrgetter('option_strings'))
         super(SortingHelpFormatter, self).add_arguments(actions)
 
-
+## Function to check if file name exist
 def is_valid_file(parser, arg):
     if not os.path.exists(arg):
         parser.error("The file %s does not exist!" % arg)
     else:
-        return open(arg, 'r')  # return an open file handle
-
+        return arg
 
 parser = argparse.ArgumentParser(description='Generate Interaction Maps of Given Size (bp)')
-parser.add_argument('-i', '--inputFile', dest='inputFile', metavar='FILE',
-                    help='Tab-delimited non-binary input file [Required]',
-                    type=lambda x: is_valid_file(parser, x))
+parser.add_argument('-i', '--inputFile', default='chr6.txt', dest='inputFile', metavar='FILE',
+                    help='Tab-delimited non-binary input file [Required]')
+parser.add_argument('-o', '--outFile', default='chr6.matrix', dest='outFile', metavar='FILE',
+                    help='Tab-delimited output file without extension [Required]')
 parser.add_argument('-c', '--chrom', dest='chrom', required=False,
                     default='chr6', help='Chromosome to calculate Maps [chr6]')
 parser.add_argument('-r', '--res', dest='res', required=False,
@@ -36,7 +37,12 @@ parser.add_argument('-v', '--version',
 args = parser.parse_args()
 
 
-def generate_matrix_from_reference(chromosome, res):
+def sort_keys_alphanumeric(x):
+    number = int(re.sub('[^0-9]', '', x[0]) )
+    length = len(x[0])
+    return length, number
+
+def generate_dictionary_of_bins(chromosome, res):
     totalChromSize = pybedtools.chromsizes('hg19')[chromosome][1]
     names = []
     for bp in range(0, totalChromSize, res):
@@ -44,30 +50,17 @@ def generate_matrix_from_reference(chromosome, res):
             names.append(str(chromosome) + ":" + str(bp) + "-" + str(bp + res))
         elif bp + res >= totalChromSize:
             names.append(str(chromosome) + ":" + str(bp) + "-" + str(totalChromSize))
-    ### Create an empty matrix that will be filled with counts
-    dim = len(names)
-    matrix = pandas.DataFrame(numpy.zeros((dim, dim)))
-    matrix.columns = names
-    matrix.index = names
-    return (matrix, names)
 
+    ## Create a dictionary of bins
+    bin = int()
+    binDictionary = dict()
+    for items in range(0,len(names)):
+        bin += 1
+        binDictionary[str(chromosome) + ":" + str(bin)] = names[items]
 
-def compare_and_count(bin1, bin2, line):
-    s_bin1 = bin1.replace(':', ' ').replace('-', ' ').split()
-    s_bin2 = bin2.replace(':', ' ').replace('-', ' ').split()
-    id1, c1, s1, e1, sc1, st1, c2, s2, e2, sc2, st2 = line.strip().split('\t')
-
-    interaction = 0
-    if bin1 == bin2:
-        # same chromosome and in-bin interaction
-        if (c1 == c2 == s_bin1[0]) and all([ s1 >= s_bin1[1], e2 <= s_bin2[2] ]):
-            interaction += 1
-    elif bin1 != bin2:
-        if all([ s_bin1[0] == s_bin2[0], (c1 == c2 == s_bin1[0]) ]):    # read is in target chromosome
-            if all([all([ s1 >= s_bin1[1], s1 <= s_bin1[2] ]), ([ s2 >= s_bin2[1], s2 <= s_bin2[2] ]) ]):
-                interaction += 1
-        else
-
+    ## sort dictionary
+#    binDictionary = collections.OrderedDict(sorted(binDictionary.items(), key=sort_keys_alphanumeric))
+    return binDictionary
 
 
 def file_block(fp, number_of_blocks, block):
@@ -97,14 +90,39 @@ def file_block(fp, number_of_blocks, block):
 
 
 if __name__ == '__main__':
-    matrix, names = generate_matrix_from_reference(str(args.chrom), int(args.res))
+    ## generate matrix ---------------------------------------------------------
+    binDictionary = generate_dictionary_of_bins(str(args.chrom), int(args.res))
 
+    ## variable initialization
+    matrix = collections.defaultdict(int)
+    interaction1 = str()
+    interaction2 = str()
+
+    ## open input file # by chunks -----------------------------------------------
     fp = open(args.inputFile)
-    number_of_chunks = int(args.threads)
-    for chunk_number in range(number_of_chunks):
-        for line in file_block(fp, number_of_chunks, chunk_number):
-            for bin1 in names:
-                for bin2 in names:
-                    matrix[bin1][bin2] = compare_and_count(bin1, bin2, line)
+#    number_of_chunks = int(args.threads)
+#    for chunk_number in range(number_of_chunks):
+#        for line in file_block(fp, number_of_chunks, chunk_number):
+    for line in fp:
+        id, c1, s1, e1, sc1, st1, c2, s2, e2, sc2, st2, flags = line.rstrip().split('\t')
+        firstFlag = False
+        secondFlag = False
+        for key, value in binDictionary.iteritems():
+            binSize = str(value).replace(':', ' ').replace('-', ' ').split()[2]
+            i1 = int(((int(s1)+int(e1))/2)/int(binSize))+1
+            i2 = int(((int(s2)+int(e2))/2)/int(binSize))+1
+            if i1 == 1 and firstFlag == False:
+                interaction1 = value
+                firstFlag = True
+            if i2 == 1 and secondFlag == False:
+                interaction2 = value
+                secondFlag = True
+            if all([firstFlag == True, secondFlag == True]):
+                matrix[interaction1,interaction2] += 1
+                break
+#                if len(matrix) >= 20: break
 
-
+    matrix2 = pandas.DataFrame(matrix.values(), index=pandas.MultiIndex.from_tuples(matrix.keys())).unstack(1)
+    matrix2.fillna(0, inplace=True)
+    args.outFile = str(args.outFile) + ".matrix.txt"
+    matrix2.to_csv(args.outFile, sep='\t')

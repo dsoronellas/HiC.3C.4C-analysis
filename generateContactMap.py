@@ -98,6 +98,11 @@ if __name__ == '__main__':
     interaction1 = str()
     interaction2 = str()
 
+    ## fill initial matrix
+    for value1 in binDictionary.values():
+        for value2 in binDictionary.values():
+            matrix[value1,value2] = 0
+
     ## open input file # by chunks -----------------------------------------------
     fp = open(args.inputFile)
 #    number_of_chunks = int(args.threads)
@@ -111,6 +116,7 @@ if __name__ == '__main__':
             binSize = str(value).replace(':', ' ').replace('-', ' ').split()[2]
             i1 = int(((int(s1)+int(e1))/2)/int(binSize))+1
             i2 = int(((int(s2)+int(e2))/2)/int(binSize))+1
+#            print binSize, i1, i2, key, value
             if i1 == 1 and firstFlag == False:
                 interaction1 = value
                 firstFlag = True

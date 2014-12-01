@@ -1,0 +1,12 @@
+$ time ./generateContactMap.py -i chr6.txt -o chr6 -c chr6 -r 1000000 -t 1; awk 'NR!=1 || NR!=3' chr6.matrix.txt > tmp; mv tmp chr6.matrix.txt;
+
+Generating library of bins for chr6 at 1000000bp resolution
+Finding interactions ...
+Merging empty matrix with bins with counts ...
+Results saved to a matrix-like tab-delimited file
+
+real	6m54.858s
+user	6m40.537s
+sys 0m3.764s
+
+OUTPUT = chr6.matrix.txt

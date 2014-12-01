@@ -20,6 +20,7 @@ def is_valid_file(parser, arg):
 	else:
 		return arg
 
+## Menu
 parser = argparse.ArgumentParser(description='Generate Interaction Maps of Given Size (bp)')
 parser.add_argument('-i', '--inputFile', default='chr6.txt', dest='inputFile', metavar='FILE',
 					help='Tab-delimited non-binary input file [Required]')

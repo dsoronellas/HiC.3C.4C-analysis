@@ -1,7 +1,6 @@
 #!/usr/local/bin/python
 
 import collections
-import re
 import pandas
 import pybedtools
 import argparse
@@ -14,7 +13,6 @@ class SortingHelpFormatter(argparse.HelpFormatter):
 		actions = sorted(actions, key=attrgetter('option_strings'))
 		super(SortingHelpFormatter, self).add_arguments(actions)
 
-
 ## Function to check if file name exist
 def is_valid_file(parser, arg):
 	if not os.path.exists(arg):
@@ -22,29 +20,21 @@ def is_valid_file(parser, arg):
 	else:
 		return arg
 
-
 parser = argparse.ArgumentParser(description='Generate Interaction Maps of Given Size (bp)')
 parser.add_argument('-i', '--inputFile', default='chr6.txt', dest='inputFile', metavar='FILE',
-                    help='Tab-delimited non-binary input file [Required]')
+					help='Tab-delimited non-binary input file [Required]')
 parser.add_argument('-o', '--outFile', default='chr6.matrix', dest='outFile', metavar='FILE',
-                    help='Tab-delimited output file without extension [Required]')
+					help='Tab-delimited output file without extension [Required]')
 parser.add_argument('-c', '--chrom', dest='chrom', required=False,
-                    default='chr6', help='Chromosome to calculate Maps [chr6]')
+					default='chr6', help='Chromosome to calculate Maps [chr6]')
 parser.add_argument('-r', '--res', dest='res', required=False,
-                    default=2000, help='Resolution (bp) to make the matrix [2000]')
+					default=2000, help='Resolution (bp) to make the matrix [2000]')
 parser.add_argument('-t', '--threads', dest='threads', required=False,
-                    help='Number of processors [1]', default=1)
+					help='Number of processors [1]', default=1)
 parser.add_argument('-v', '--version',
-                    action='version', version='%(prog)s (myprog version 0.1)')
+					action='version', version='%(prog)s (myprog version 0.1)')
 args = parser.parse_args()
-
-
-def sort_keys_alphanumeric(x):
-	number = int(re.sub('[^0-9]', '', x[0]))
-	length = len(x[0])
-	return length, number
-
-
+					
 def generate_dictionary_of_bins(chromosome, res):
 	totalChromSize = pybedtools.chromsizes('hg19')[chromosome][1]
 	names = []
@@ -53,25 +43,20 @@ def generate_dictionary_of_bins(chromosome, res):
 			names.append(str(chromosome) + ":" + str(bp) + "-" + str(bp + res))
 		elif bp + res >= totalChromSize:
 			names.append(str(chromosome) + ":" + str(bp) + "-" + str(totalChromSize))
-
 	## Create a dictionary of bins
 	bin = int()
 	binDictionary = dict()
 	for items in range(0, len(names)):
 		bin += 1
 		binDictionary[str(chromosome) + ":" + str(bin)] = names[items]
-
-		## sort dictionary
-	#    binDictionary = collections.OrderedDict(sorted(binDictionary.items(), key=sort_keys_alphanumeric))
 	return binDictionary
-
 
 def file_block(fp, number_of_blocks, block):
 	'''
-    A generator that splits a file into blocks and iterates
-    over the lines of one of the blocks.
-    http://xor0110.wordpress.com/2013/04/13/how-to-read-a-chunk-of-lines-from-a-file-in-python/
-    '''
+	A generator that splits a file into blocks and iterates
+	over the lines of one of the blocks.
+	http://xor0110.wordpress.com/2013/04/13/how-to-read-a-chunk-of-lines-from-a-file-in-python/
+	'''
 
 	assert 0 <= block and block < number_of_blocks
 	assert 0 < number_of_blocks
@@ -90,7 +75,6 @@ def file_block(fp, number_of_blocks, block):
 
 	while fp.tell() < end:
 		yield fp.readline()
-
 
 if __name__ == '__main__':
 	## generate matrix ---------------------------------------------------------

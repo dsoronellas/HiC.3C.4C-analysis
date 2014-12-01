@@ -99,8 +99,8 @@ if __name__ == '__main__':
 		secondFlag = False
 		for key, value in binDictionary.iteritems():
 			binSize = str(value).replace(':', ' ').replace('-', ' ').split()[2]
-			i1 = int(((int(s1) + int(e1)) / 2) / int(binSize)) + 1
-			i2 = int(((int(s2) + int(e2)) / 2) / int(binSize)) + 1
+			i1 = int(((int(s1) + int(e1))/2)/int(binSize)) + 1
+			i2 = int(((int(s2) + int(e2))/2)/int(binSize)) + 1
 			if i1 == 1 and firstFlag == False:
 				interaction1 = value
 				firstFlag = True
@@ -111,12 +111,14 @@ if __name__ == '__main__':
 				matrix[interaction1, interaction2] += 1
 				break
 
+	print 'Merging empty matrix with bins with counts ...'
 	finalMatrix = collections.defaultdict(int)
 	for value1 in binDictionary.values():
 		for value2 in binDictionary.values():
 			finalMatrix[value1, value2] = 0
 	finalMatrix.update(matrix)
 
+	print 'Results saved to a matrix-like tab-delimited file'
 	matrix2 = pandas.DataFrame(finalMatrix.values(), index=pandas.MultiIndex.from_tuples(finalMatrix.keys())).unstack(1)
 	matrix2.fillna(0, inplace=True)
 	args.outFile = str(args.outFile) + ".matrix.txt"

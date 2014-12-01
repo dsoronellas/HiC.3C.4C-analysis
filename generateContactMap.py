@@ -91,6 +91,7 @@ def file_block(fp, number_of_blocks, block):
 
 if __name__ == '__main__':
     ## generate matrix ---------------------------------------------------------
+    print 'Generating library of bins for ' + str(args.chrom) +' at ' + str(args.res) + 'bp resolution'
     binDictionary = generate_dictionary_of_bins(str(args.chrom), int(args.res))
 
     ## variable initialization
@@ -98,12 +99,8 @@ if __name__ == '__main__':
     interaction1 = str()
     interaction2 = str()
 
-    ## fill initial matrix
-    for value1 in binDictionary.values():
-        for value2 in binDictionary.values():
-            matrix[value1,value2] = 0
-
     ## open input file # by chunks -----------------------------------------------
+    print 'Finding interactions ...'
     fp = open(args.inputFile)
 #    number_of_chunks = int(args.threads)
 #    for chunk_number in range(number_of_chunks):
@@ -116,7 +113,6 @@ if __name__ == '__main__':
             binSize = str(value).replace(':', ' ').replace('-', ' ').split()[2]
             i1 = int(((int(s1)+int(e1))/2)/int(binSize))+1
             i2 = int(((int(s2)+int(e2))/2)/int(binSize))+1
-#            print binSize, i1, i2, key, value
             if i1 == 1 and firstFlag == False:
                 interaction1 = value
                 firstFlag = True
@@ -126,9 +122,14 @@ if __name__ == '__main__':
             if all([firstFlag == True, secondFlag == True]):
                 matrix[interaction1,interaction2] += 1
                 break
-#                if len(matrix) >= 20: break
 
-    matrix2 = pandas.DataFrame(matrix.values(), index=pandas.MultiIndex.from_tuples(matrix.keys())).unstack(1)
+    finalMatrix = collections.defaultdict(int)
+    for value1 in binDictionary.values():
+        for value2 in binDictionary.values():
+            finalMatrix[value1,value2] = 0
+    finalMatrix.update(matrix)
+
+    matrix2 = pandas.DataFrame(finalMatrix.values(), index=pandas.MultiIndex.from_tuples(finalMatrix.keys())).unstack(1)
     matrix2.fillna(0, inplace=True)
     args.outFile = str(args.outFile) + ".matrix.txt"
     matrix2.to_csv(args.outFile, sep='\t')

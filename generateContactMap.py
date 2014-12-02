@@ -126,17 +126,18 @@ if __name__ == '__main__':
 	start = int(args.subset.split('-')[0])/int(args.res)
 	stop = int(args.subset.split('-')[1])/int(args.res)
 
+	## Build matrix ------ for High-Res takes a lot of time ----------
 	fp = open(args.outFile, 'w')
-	for i in range(start, stop):
+	for i in range(start, stop):	## Row iterator
 		if i == start:
-			for z in range(start, stop):
+			for z in range(start, stop):	## Header print
 				if z == start:
 					fp.write('%s\t%s\t' % ('bins',bins[z]))
 				elif z < stop:
 					fp.write('%s\t' % bins[z])
 				elif z == stop:
 					fp.write('%s\n' % bins[z])
-		for j in range(start,stop):
+		for j in range(start,stop):	## Column iterator
 			if j == start:
 				fp.write('%s\t%s\t' % (bins[i], matrix[bins[i],bins[j]]))
 			elif j < stop:

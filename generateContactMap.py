@@ -39,22 +39,6 @@ parser.add_argument('-v', '--version',
 					action='version', version='%(prog)s (myprog version 0.1)')
 args = parser.parse_args()
 
-def generate_dictionary_of_bins(chromosome, res):
-	totalChromSize = pybedtools.chromsizes('hg19')[chromosome][1]
-	names = []
-	for bp in range(0, totalChromSize, res):
-		if bp + res < totalChromSize:
-			names.append(str(chromosome) + ":" + str(bp) + "-" + str(bp + res))
-		elif bp + res >= totalChromSize:
-			names.append(str(chromosome) + ":" + str(bp) + "-" + str(totalChromSize))
-	## Create a dictionary of bins
-	bin = int()
-	binDictionary = dict()
-	for items in range(0, len(names)):
-		bin += 1
-		binDictionary[str(chromosome) + ":" + str(bin)] = names[items]
-	return binDictionary
-
 
 def file_block(fp, number_of_blocks, block):
 	'''
